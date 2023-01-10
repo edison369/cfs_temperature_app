@@ -119,8 +119,6 @@ extern "C" {
  * @{
  */
 
-#define delay_ms(m) rtems_task_wake_after(1 + ((m)/rtems_configuration_get_milliseconds_per_tick()))
-
 #define temperature_read
 #define humidity_read
 

@@ -499,6 +499,7 @@ void aht10_read(void){
 
   //Data reading every 120 seg approx
   if(TEMPERATURE_APP_Data.TimeCounter == 0){
+    CFE_EVS_SendEvent(TEMPERATURE_APP_DEV_INF_EID, CFE_EVS_EventType_INFORMATION, "TEMPERATURE: Reading Device");
     fd = open(&aht10_path[0], O_RDWR);
     if(fd >= 0)
     sensor_aht10_read(fd);
@@ -655,11 +656,11 @@ static int sensor_aht10_ioctl(i2c_dev *dev, ioctl_command_t command, void *arg){
 
       err = set_bytes(AHT10_ADDRESS_X38, &val, 1);
 
-      delay_ms(AHTXX_SOFT_RESET_DELAY);
+      OS_TaskDelay(AHTXX_SOFT_RESET_DELAY);
       break;
 
     case SENSOR_AHT10_NORMAL_MODE:
-      delay_ms(AHTXX_CMD_DELAY);
+      OS_TaskDelay(AHTXX_CMD_DELAY);
 
       val = NULL;
       val = malloc(3 * sizeof(uint8_t));
@@ -740,7 +741,7 @@ static int readMeasurement(uint8_t **buff){
   /* check busy bit */
   get_busy_bit();                                                //update status byte, read status byte & check busy bit
 
-  if      (SENSOR_AHT10_Data.status == AHTXX_BUSY_ERROR) {delay_ms(AHTXX_MEASUREMENT_DELAY - AHTXX_CMD_DELAY);}
+  if      (SENSOR_AHT10_Data.status == AHTXX_BUSY_ERROR) {OS_TaskDelay(AHTXX_MEASUREMENT_DELAY - AHTXX_CMD_DELAY);}
   else if (SENSOR_AHT10_Data.status != AHTXX_NO_ERROR)   {return 1;}                                           //no reason to continue, received data smaller than expected
 
   /* read data from sensor */
@@ -784,7 +785,7 @@ static int readMeasurement(uint8_t **buff){
 static int readStatusRegister(uint8_t **buff){
   int err;
 
-  delay_ms(AHTXX_CMD_DELAY);
+  OS_TaskDelay(AHTXX_CMD_DELAY);
   uint8_t *tmp;
   tmp = NULL;
 
@@ -808,7 +809,7 @@ static uint8_t get_calibration_bit(){
 
 static void get_busy_bit(){
 
-  delay_ms(AHTXX_CMD_DELAY);
+  OS_TaskDelay(AHTXX_CMD_DELAY);
 
   uint8_t *value;
   value = NULL;
@@ -845,7 +846,7 @@ int sensor_aht10_begin(int fd){
     SENSOR_AHT10_Data.rawData[i] = 0;
   }
 
-  delay_ms(100);                  //wait for sensor to initialize
+  OS_TaskDelay(100);                  //wait for sensor to initialize
 
   // Do a soft reset before setting Normal Mode
   ioctl(fd, SENSOR_AHT10_SOFT_RST, NULL);
