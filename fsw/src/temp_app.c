@@ -498,7 +498,8 @@ int32 aht10_init(void){
 void aht10_read(void){
   int fd;
 
-  //Data reading
+  // Data reading every 120 segs approx
+  // Each read is every 4 segs approx
   if(TEMP_APP_Data.TimeCounter == 0){
     CFE_EVS_SendEvent(TEMP_APP_DEV_INF_EID, CFE_EVS_EventType_INFORMATION, "TEMP: Reading Device");
     fd = open(&aht10_path[0], O_RDWR);
@@ -507,7 +508,7 @@ void aht10_read(void){
     close(fd);
   }
 
-  if(TEMP_APP_Data.TimeCounter <= 60){
+  if(TEMP_APP_Data.TimeCounter <= 29){
     TEMP_APP_Data.TimeCounter++;
   }else{
     TEMP_APP_Data.TimeCounter = 0;
