@@ -22,15 +22,14 @@
  * Define Temperature App  Messages and info
  */
 
-#ifndef TEMPERATURE_APP_MSG_H
-#define TEMPERATURE_APP_MSG_H
+#ifndef TEMP_APP_MSG_H
+#define TEMP_APP_MSG_H
 
 /*
 ** Temperature App command codes
 */
-#define TEMPERATURE_APP_NOOP_CC           0
-#define TEMPERATURE_APP_RESET_COUNTERS_CC 1
-#define TEMPERATURE_APP_CONFIG_AHT10_CC 2
+#define TEMP_APP_NOOP_CC           0
+#define TEMP_APP_RESET_COUNTERS_CC 1
 
 /*************************************************************************/
 
@@ -40,7 +39,7 @@
 typedef struct
 {
     CFE_MSG_CommandHeader_t CmdHeader; /**< \brief Command header */
-} TEMPERATURE_APP_NoArgsCmd_t;
+} TEMP_APP_NoArgsCmd_t;
 
 /*
 ** The following commands all share the "NoArgs" format
@@ -49,8 +48,8 @@ typedef struct
 ** allows them to change independently in the future without changing the prototype
 ** of the handler function
 */
-typedef TEMPERATURE_APP_NoArgsCmd_t TEMPERATURE_APP_NoopCmd_t;
-typedef TEMPERATURE_APP_NoArgsCmd_t TEMPERATURE_APP_ResetCountersCmd_t;
+typedef TEMP_APP_NoArgsCmd_t TEMP_APP_NoopCmd_t;
+typedef TEMP_APP_NoArgsCmd_t TEMP_APP_ResetCountersCmd_t;
 
 /*************************************************************************/
 /*
@@ -67,7 +66,7 @@ typedef struct
     float MPU6050Temp;
     float MPL3115A2Temp;
     uint8 TimeCounter;
-} TEMPERATURE_APP_HkTlm_Payload_t;
+} TEMP_APP_HkTlm_Payload_t;
 
 typedef struct
 {
@@ -86,12 +85,12 @@ typedef struct
     uint8 byte_group_7[4];    // empty
     uint8 byte_group_8[4];    // empty
     uint8 byte_group_9[4];    // empty
-} TEMPERATURE_APP_OutData_t;
+} TEMP_APP_OutData_t;
 
 typedef struct
 {
     CFE_MSG_TelemetryHeader_t  TelemetryHeader; /**< \brief Telemetry header */
-    TEMPERATURE_APP_HkTlm_Payload_t Payload;         /**< \brief Telemetry payload */
-} TEMPERATURE_APP_HkTlm_t;
+    TEMP_APP_HkTlm_Payload_t Payload;         /**< \brief Telemetry payload */
+} TEMP_APP_HkTlm_t;
 
-#endif /* TEMPERATURE_APP_MSG_H */
+#endif /* TEMP_APP_MSG_H */

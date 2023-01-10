@@ -19,11 +19,11 @@
 /**
  * @file
  *
- * Main header file for the TEMPERATURE application
+ * Main header file for the TEMP application
  */
 
-#ifndef TEMPERATURE_APP_H
-#define TEMPERATURE_APP_H
+#ifndef TEMP_APP_H
+#define TEMP_APP_H
 
 /*
 ** Required header files.
@@ -34,9 +34,9 @@
 #include "cfe_sb.h"
 #include "cfe_es.h"
 
-#include "temperature_app_perfids.h"
-#include "temperature_app_msgids.h"
-#include "temperature_app_msg.h"
+#include "temp_app_perfids.h"
+#include "temp_app_msgids.h"
+#include "temp_app_msg.h"
 
 
 #include "sensor-aht10.h"
@@ -46,7 +46,7 @@ static const char bus_path[] = "/dev/i2c-1";
 static const char aht10_path[] = "/dev/i2c-1.aht10-0";
 
 /***********************************************************************/
-#define TEMPERATURE_APP_PIPE_DEPTH 32 /* Depth of the Command Pipe for Application */
+#define TEMP_APP_PIPE_DEPTH 32 /* Depth of the Command Pipe for Application */
 
 #define PIN_HIGH		1
 #define PIN_LOW			0
@@ -85,8 +85,8 @@ typedef struct
     /*
     ** Housekeeping telemetry packet...
     */
-    TEMPERATURE_APP_HkTlm_t HkTlm;
-    TEMPERATURE_APP_OutData_t OutData;
+    TEMP_APP_HkTlm_t HkTlm;
+    TEMP_APP_OutData_t OutData;
 
     /*
     ** Run Status variable used in the main processing loop
@@ -104,32 +104,30 @@ typedef struct
     char   PipeName[CFE_MISSION_MAX_API_LEN];
     uint16 PipeDepth;
 
-    CFE_EVS_BinFilter_t EventFilters[TEMPERATURE_APP_EVENT_COUNTS];
+    CFE_EVS_BinFilter_t EventFilters[TEMP_APP_EVENT_COUNTS];
 
-} TEMPERATURE_APP_Data_t;
+} TEMP_APP_Data_t;
 
 /****************************************************************************/
 /*
 ** Local function prototypes.
 **
-** Note: Except for the entry point (TEMPERATURE_APP_Main), these
+** Note: Except for the entry point (TEMP_APP_Main), these
 **       functions are not called from any other source module.
 */
-void  TEMPERATURE_APP_Main(void);
-int32 TEMPERATURE_APP_Init(void);
-void  TEMPERATURE_APP_ProcessCommandPacket(CFE_SB_Buffer_t *SBBufPtr);
-void  TEMPERATURE_APP_ProcessGroundCommand(CFE_SB_Buffer_t *SBBufPtr);
-int32 TEMPERATURE_APP_ReportRFTelemetry(const CFE_MSG_CommandHeader_t *Msg);
-int32 TEMPERATURE_APP_ReportHousekeeping(const CFE_MSG_CommandHeader_t *Msg);
-int32 TEMPERATURE_APP_ResetCounters(const TEMPERATURE_APP_ResetCountersCmd_t *Msg);
-int32 TEMPERATURE_APP_Noop(const TEMPERATURE_APP_NoopCmd_t *Msg);
+void  TEMP_APP_Main(void);
+int32 TEMP_APP_Init(void);
+void  TEMP_APP_ProcessCommandPacket(CFE_SB_Buffer_t *SBBufPtr);
+void  TEMP_APP_ProcessGroundCommand(CFE_SB_Buffer_t *SBBufPtr);
+int32 TEMP_APP_ReportRFTelemetry(const CFE_MSG_CommandHeader_t *Msg);
+int32 TEMP_APP_ReportHousekeeping(const CFE_MSG_CommandHeader_t *Msg);
+int32 TEMP_APP_ResetCounters(const TEMP_APP_ResetCountersCmd_t *Msg);
+int32 TEMP_APP_Noop(const TEMP_APP_NoopCmd_t *Msg);
 
-int32 TEMPERATURE_APP_Config_AHT10(const TEMPERATURE_APP_Config_MPU6050_t *Msg);
+bool TEMP_APP_VerifyCmdLength(CFE_MSG_Message_t *MsgPtr, size_t ExpectedLength);
 
-bool TEMPERATURE_APP_VerifyCmdLength(CFE_MSG_Message_t *MsgPtr, size_t ExpectedLength);
-
-int32 aht10_conf(void);
-void aht10_read_proc(void);
+int32 aht10_init(void);
+void aht10_read(void);
 
 
-#endif /* TEMPERATURE_APP_H */
+#endif /* TEMP_APP_H */

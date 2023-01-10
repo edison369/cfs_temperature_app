@@ -24,17 +24,17 @@
  * \note The Temperature App assumes default configuration which uses V1 of message id implementation
  */
 
-#ifndef TEMPERATURE_APP_MSGIDS_H
-#define TEMPERATURE_APP_MSGIDS_H
+#ifndef TEMP_APP_MSGIDS_H
+#define TEMP_APP_MSGIDS_H
 
 /* V1 Command Message IDs must be 0x18xx */
-#define TEMPERATURE_APP_CMD_MID     0x18E2
-#define TEMPERATURE_APP_SEND_HK_MID 0x18E3
-#define TEMPERATURE_APP_SEND_RF_MID 0x18F2
-#define TEMPERATURE_APP_RF_DATA_MID 0x18F3
+#define TEMP_APP_CMD_MID     0x18E2
+#define TEMP_APP_SEND_HK_MID 0x18E3
+#define TEMP_APP_SEND_RF_MID 0x18F2
+#define TEMP_APP_RF_DATA_MID 0x18F3
 /* V1 Telemetry Message IDs must be 0x08xx */
-#define TEMPERATURE_APP_HK_TLM_MID 0x08E1
+#define TEMP_APP_HK_TLM_MID 0x08E1
 
 
 
-#endif /* TEMPERATURE_APP_MSGIDS_H */
+#endif /* TEMP_APP_MSGIDS_H */

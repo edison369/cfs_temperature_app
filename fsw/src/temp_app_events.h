@@ -19,12 +19,26 @@
 /**
  * @file
  *
- * Define Temperature App Performance IDs
+ * Define TEMP App Events IDs
  */
 
-#ifndef TEMPERATURE_APP_PERFIDS_H
-#define TEMPERATURE_APP_PERFIDS_H
+#ifndef TEMP_APP_EVENTS_H
+#define TEMP_APP_EVENTS_H
 
-#define TEMPERATURE_APP_PERF_ID 99
+#define TEMP_APP_RESERVED_EID          0
+#define TEMP_APP_STARTUP_INF_EID       1
+#define TEMP_APP_COMMAND_ERR_EID       2
+#define TEMP_APP_COMMANDNOP_INF_EID    3
+#define TEMP_APP_COMMANDRST_INF_EID    4
+#define TEMP_APP_INVALID_MSGID_ERR_EID 5
+#define TEMP_APP_LEN_ERR_EID           6
+#define TEMP_APP_PIPE_ERR_EID          7
 
-#endif /* TEMPERATURE_APP_PERFIDS_H */
+// Events IDs related to the MPU6050
+#define TEMP_APP_DEV_INF_EID           11
+
+//TODO: Here you add the new commands events IDs
+
+#define TEMP_APP_EVENT_COUNTS          8
+
+#endif /* TEMP_APP_EVENTS_H */
