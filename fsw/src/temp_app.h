@@ -38,13 +38,6 @@
 #include "temp_app_msgids.h"
 #include "temp_app_msg.h"
 
-
-#include "sensor-aht10.h"
-#define AHT10
-
-static const char bus_path[] = "/dev/i2c-1";
-static const char aht10_path[] = "/dev/i2c-1.aht10-0";
-
 /***********************************************************************/
 #define TEMP_APP_PIPE_DEPTH 32 /* Depth of the Command Pipe for Application */
 
@@ -127,7 +120,8 @@ int32 TEMP_APP_Noop(const TEMP_APP_NoopCmd_t *Msg);
 bool TEMP_APP_VerifyCmdLength(CFE_MSG_Message_t *MsgPtr, size_t ExpectedLength);
 
 int32 aht10_init(void);
-void aht10_read(void);
+void temperature_read(void);
+int aht10_get_data(void);
 
 
 #endif /* TEMP_APP_H */
