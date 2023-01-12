@@ -164,7 +164,7 @@ int32 TEMP_APP_Init(void)
     if (status != CFE_SUCCESS)
     {
         CFE_ES_WriteToSysLog("Temperature App: Error Registering Events, RC = 0x%08lX\n", (unsigned long)status);
-        return status;
+        return (status);
     }
 
     /*
@@ -173,11 +173,11 @@ int32 TEMP_APP_Init(void)
     CFE_MSG_Init(CFE_MSG_PTR(TEMP_APP_Data.HkTlm.TelemetryHeader), CFE_SB_ValueToMsgId(TEMP_APP_HK_TLM_MID),
                  sizeof(TEMP_APP_Data.HkTlm));
 
-    /*
-    ** Initialize output RF packet.
-    */
-    CFE_MSG_Init(CFE_MSG_PTR(TEMP_APP_Data.OutData.TelemetryHeader), CFE_SB_ValueToMsgId(TEMP_APP_RF_DATA_MID),
-                 sizeof(TEMP_APP_Data.OutData));
+     /*
+     ** Initialize output RF packet.
+     */
+     CFE_MSG_Init(CFE_MSG_PTR(TEMP_APP_Data.OutData.TelemetryHeader), CFE_SB_ValueToMsgId(TEMP_APP_RF_DATA_MID),
+                  sizeof(TEMP_APP_Data.OutData));
 
     /*
     ** Create Software Bus message pipe.
@@ -304,58 +304,54 @@ void TEMP_APP_ProcessGroundCommand(CFE_SB_Buffer_t *SBBufPtr)
     }
 }
 
-int32 TEMP_APP_ReportRFTelemetry(const CFE_MSG_CommandHeader_t *Msg){
+int32 TEMP_APP_ReportRFTelemetry(const CFE_MSG_CommandHeader_t *Msg)
+{
 
-  /*
-  ** Get command execution counters...
-  */
-  TEMP_APP_Data.OutData.CommandErrorCounter = TEMP_APP_Data.ErrCounter;
-  TEMP_APP_Data.OutData.CommandCounter      = TEMP_APP_Data.CmdCounter;
+    /*
+    ** Get command execution counters...
+    */
+    TEMP_APP_Data.OutData.CommandErrorCounter = TEMP_APP_Data.ErrCounter;
+    TEMP_APP_Data.OutData.CommandCounter      = TEMP_APP_Data.CmdCounter;
 
-  TEMP_APP_Data.OutData.AppID_H = (uint8_t) ((TEMP_APP_HK_TLM_MID >> 8) & 0xff);
-  TEMP_APP_Data.OutData.AppID_L = (uint8_t) (TEMP_APP_HK_TLM_MID & 0xff);
+    TEMP_APP_Data.OutData.AppID_H = (uint8_t) ((TEMP_APP_HK_TLM_MID >> 8) & 0xff);
+    TEMP_APP_Data.OutData.AppID_L = (uint8_t) (TEMP_APP_HK_TLM_MID & 0xff);
 
-  /* Copy the Temperature data */
-  uint8_t *aux_array1;
-  uint8_t *aux_array2;
-  uint8_t *aux_array3;
-  uint8_t *aux_array4;
+    uint8_t *aux_array1;
+    aux_array1 = NULL;
+    aux_array1 = malloc(4 * sizeof(uint8_t));
+    aux_array1 = (uint8_t*)(&TEMP_APP_Data.TemperatureRead);
 
-  aux_array1 = NULL;
-  aux_array1 = malloc(4 * sizeof(uint8_t));
-  aux_array1 = (uint8_t*)(&TEMP_APP_Data.TemperatureRead);
+    uint8_t *aux_array2;
+    aux_array2 = NULL;
+    aux_array2 = malloc(4 * sizeof(uint8_t));
+    aux_array2 = (uint8_t*)(&TEMP_APP_Data.HumidityRead);
 
-  aux_array2 = NULL;
-  aux_array2 = malloc(4 * sizeof(uint8_t));
-  aux_array2 = (uint8_t*)(&TEMP_APP_Data.HumidityRead);
+    uint8_t *aux_array3;
+    aux_array3 = NULL;
+    aux_array3 = malloc(4 * sizeof(uint8_t));
+    aux_array3 = (uint8_t*)(&TEMP_APP_Data.MPU6050Temp);
 
-  aux_array3 = NULL;
-  aux_array3 = malloc(4 * sizeof(uint8_t));
-  aux_array3 = (uint8_t*)(&TEMP_APP_Data.MPU6050Temp);
+    uint8_t *aux_array4;
+    aux_array4 = NULL;
+    aux_array4 = malloc(4 * sizeof(uint8_t));
+    aux_array4 = (uint8_t*)(&TEMP_APP_Data.MPL3115A2Temp);
 
-  aux_array4 = NULL;
-  aux_array4 = malloc(4 * sizeof(uint8_t));
-  aux_array4 = (uint8_t*)(&TEMP_APP_Data.MPL3115A2Temp);
-
-  for(int i=0;i<3;i++){
-
+    for(int i=0;i<4;i++){
       TEMP_APP_Data.OutData.byte_group_1[i] = aux_array1[i];
       TEMP_APP_Data.OutData.byte_group_2[i] = aux_array2[i];
       TEMP_APP_Data.OutData.byte_group_3[i] = aux_array3[i];
       TEMP_APP_Data.OutData.byte_group_4[i] = aux_array4[i];
-
       TEMP_APP_Data.OutData.byte_group_5[i] = 0;
       TEMP_APP_Data.OutData.byte_group_6[i] = 0;
+    }
 
-  }
+    /*
+    ** Send housekeeping telemetry packet...
+    */
+    CFE_SB_TimeStampMsg(CFE_MSG_PTR(TEMP_APP_Data.OutData.TelemetryHeader));
+    CFE_SB_TransmitMsg(CFE_MSG_PTR(TEMP_APP_Data.OutData.TelemetryHeader), true);
 
-  /*
-  ** Send housekeeping telemetry packet...
-  */
-  CFE_SB_TimeStampMsg(CFE_MSG_PTR(TEMP_APP_Data.OutData.TelemetryHeader));
-  CFE_SB_TransmitMsg(CFE_MSG_PTR(TEMP_APP_Data.OutData.TelemetryHeader), true);
-
-  return CFE_SUCCESS;
+    return CFE_SUCCESS;
 }
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * **/

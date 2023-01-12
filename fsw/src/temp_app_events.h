@@ -33,9 +33,7 @@
 #define TEMP_APP_INVALID_MSGID_ERR_EID 5
 #define TEMP_APP_LEN_ERR_EID           6
 #define TEMP_APP_PIPE_ERR_EID          7
-
-// Events IDs related to the MPU6050
-#define TEMP_APP_DEV_INF_EID           11
+#define TEMP_APP_DEV_INF_EID           8
 
 //TODO: Here you add the new commands events IDs
 

@@ -76,10 +76,10 @@ typedef struct
     uint8 CommandCounter;
     uint8 CommandErrorCounter;
     uint8 spare[2];
-    uint8 byte_group_1[4];    // Temperature
-    uint8 byte_group_2[4];    // Humidity
-    uint8 byte_group_3[4];    // MPU6050 Temp
-    uint8 byte_group_4[4];    // MPL3115A2 Temp
+    uint8 byte_group_1[4];    // AHT10 Temperature
+    uint8 byte_group_2[4];    // AHT10 Humidity
+    uint8 byte_group_3[4];    // MPU6050 Temperature
+    uint8 byte_group_4[4];    // MPL3115A2 Temperature
     uint8 byte_group_5[4];    // empty
     uint8 byte_group_6[4];    // empty
 } TEMP_APP_OutData_t;
