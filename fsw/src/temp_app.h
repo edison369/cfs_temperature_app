@@ -69,7 +69,7 @@ typedef struct
     uint8 CmdCounter;
     uint8 ErrCounter;
 
-    uint8_t TimeCounter;
+    int TimeCounter;
 
     /*
     ** AHT10 data...

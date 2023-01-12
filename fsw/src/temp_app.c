@@ -28,15 +28,13 @@
 #include "temp_app_version.h"
 #include "temp_app.h"
 
-#include "aht10.h"
-#include "mpu6050.h"
-#include "mpl3115a2.h"
+
+#include "sensor-aht10.h"
 
 /*
 ** global data
 */
 TEMP_APP_Data_t TEMP_APP_Data;
-// SENSOR_AHT10_Data_t SENSOR_AHT10_Data;
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *  * *  * * * * **/
 /*                                                                            */
@@ -533,8 +531,11 @@ int32 aht10_init(void){
                       aht10_path);
 
   // Device configuration
+  TEMP_APP_Data.TemperatureRead = 0;
+  TEMP_APP_Data.HumidityRead = 0;
   rv = sensor_aht10_begin(fd);
-  CFE_EVS_SendEvent(TEMP_APP_DEV_INF_EID, CFE_EVS_EventType_INFORMATION, "TEMP: Device AHT10 initialized");
+  if(rv == 0)
+    CFE_EVS_SendEvent(TEMP_APP_DEV_INF_EID, CFE_EVS_EventType_INFORMATION, "TEMP: Device AHT10 initialized");
 
   close(fd);
 
@@ -542,57 +543,11 @@ int32 aht10_init(void){
 
 }
 
-void get_sensors_temp(void){
-    int32            CFE_SB_status = CFE_SUCCESS;
-    CFE_SB_Buffer_t* TempMsgPtr = NULL;
-    CFE_SB_MsgId_t   TempMsgId;
-
-
-    SUBS_APP_TempData_t* dataPtr = NULL;
-
-    do{
-        CFE_SB_status = CFE_SB_ReceiveBuffer(&TempMsgPtr, TEMP_APP_Data.TempPipe, CFE_SB_POLL);
-        dataPtr = NULL;
-
-        if (CFE_SB_status == CFE_SUCCESS){
-            CFE_MSG_GetMsgId(&TempMsgPtr->Msg, &TempMsgId);
-
-            /* Update the private data */
-            dataPtr = (SUBS_APP_TempData_t *)TempMsgPtr;
-            TEMP_APP_Data.sensor_temp = dataPtr->temperature;
-
-            switch (CFE_SB_MsgIdToValue(TempMsgId)){
-
-              case ALTITUDE_APP_TEMP_MID:
-                TEMP_APP_Data.MPL3115A2Temp = TEMP_APP_Data.sensor_temp;
-                break;
-
-              case IMU_APP_TEMP_MID:
-                TEMP_APP_Data.MPU6050Temp = TEMP_APP_Data.sensor_temp;
-                break;
-
-              default:
-                CFE_EVS_SendEvent(TEMP_APP_INVALID_MSGID_ERR_EID, CFE_EVS_EventType_ERROR,
-                                  "TEMP - Recvd invalid TEMP msgId (0x%08X)", CFE_SB_MsgIdToValue(TempMsgId));
-                break;
-            }
-        }else if(CFE_SB_status == CFE_SB_NO_MESSAGE){
-          // The pipe is empty
-          break;
-        }else if(CFE_SB_status == CFE_SB_TIME_OUT){
-          CFE_EVS_SendEvent(TEMP_APP_PIPE_ERR_EID, CFE_EVS_EventType_INFORMATION,
-                            "TEMP: Message fails to arrive within the specified timeout period\n");
-          break;
-        }
-        // OS_TaskDelay(500); /*2 Hz*/
-    }while(CFE_SB_status == CFE_SUCCESS);
-}
-
 void temperature_read(void){
 
   // Data reading every 32 segs approx
   // Each read is every 4 segs approx
-  if(TEMP_APP_Data.TimeCounter == 0){
+  if(TEMP_APP_Data.TimeCounter == 7){
     // Alternatively the function sensor_aht10_get_temp() can be used
     // instead of aht10_get_data(). sensor_aht10_get_temp() is a function from
     // the sensor public API, and it only returns the temperature value.
@@ -604,7 +559,7 @@ void temperature_read(void){
     }
   }
 
-  if(TEMP_APP_Data.TimeCounter <= 8){
+  if(TEMP_APP_Data.TimeCounter < 7){
     TEMP_APP_Data.TimeCounter++;
   }else{
     TEMP_APP_Data.TimeCounter = 0;
@@ -613,43 +568,71 @@ void temperature_read(void){
 }
 
 int aht10_get_data(void){
-  uint8_t *val;
-  int rv;
-  uint8_t rawData[5];
+  int fd;
 
-  for (int i = 0; i < 5; i++) {
-    rawData[i] = 0;
+  //Data reading
+  static const char aht10_path[] = "/dev/i2c-1.aht10-0";
+  fd = open(&aht10_path[0], O_RDWR);
+  if(fd < 0){
+    CFE_EVS_SendEvent(TEMP_APP_DEV_INF_EID, CFE_EVS_EventType_INFORMATION, "TEMP: Could not open device");
+    return 1;
   }
 
-  val = NULL;
-  val = malloc(6 * sizeof(uint8_t));
-  rv = readMeasurement(&val);
+  sensor_aht10_read(fd);
+  close(fd);
 
-  if (rv >= 0){
-    for (int i = 0; i < 5; i++) {
-      rawData[i] = (val)[i+1];
-    }
-  }else{
-    return -1;
-  }
-
-  uint32_t temperature = rawData[2] & 0x0F; //20-bit raw temperature data
-         temperature <<= 8;
-         temperature  |= rawData[3];
-         temperature <<= 8;
-         temperature  |= rawData[4];
-
-
-  uint32_t  humidity   = rawData[0];        //20-bit raw humidity data
-            humidity <<= 8;
-            humidity  |= rawData[1];
-            humidity <<= 4;
-            humidity  |= rawData[2] >> 4;
-
-  if (humidity > 0x100000) {humidity = 0x100000;}   //check if RH>100
-
-  TEMP_APP_Data.TemperatureRead = ((float)temperature / 0x100000) * 200 - 50;
-  TEMP_APP_Data.HumidityRead = ((float)humidity / 0x100000) * 100;
+  TEMP_APP_Data.TemperatureRead = sensor_aht10_get_temp();
+  TEMP_APP_Data.HumidityRead = sensor_aht10_get_humid();
 
   return 0;
 }
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * **/
+/*                                                                            */
+/* Function to get the temperature sent by other apps to the TempPipe         */
+/*                                                                            */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * **/
+void get_sensors_temp(void){
+  int32            CFE_SB_status = CFE_SUCCESS;
+  CFE_SB_Buffer_t* TempMsgPtr = NULL;
+  CFE_SB_MsgId_t   TempMsgId;
+
+
+  SUBS_APP_TempData_t* dataPtr = NULL;
+
+  do{
+    CFE_SB_status = CFE_SB_ReceiveBuffer(&TempMsgPtr, TEMP_APP_Data.TempPipe, CFE_SB_POLL);
+    dataPtr = NULL;
+
+    if (CFE_SB_status == CFE_SUCCESS){
+      CFE_MSG_GetMsgId(&TempMsgPtr->Msg, &TempMsgId);
+
+      /* Update the private data */
+      dataPtr = (SUBS_APP_TempData_t *)TempMsgPtr;
+      TEMP_APP_Data.sensor_temp = dataPtr->temperature;
+
+      switch (CFE_SB_MsgIdToValue(TempMsgId)){
+
+        case ALTITUDE_APP_TEMP_MID:
+        TEMP_APP_Data.MPL3115A2Temp = TEMP_APP_Data.sensor_temp;
+        break;
+
+        case IMU_APP_TEMP_MID:
+        TEMP_APP_Data.MPU6050Temp = TEMP_APP_Data.sensor_temp;
+        break;
+
+        default:
+        CFE_EVS_SendEvent(TEMP_APP_INVALID_MSGID_ERR_EID, CFE_EVS_EventType_ERROR,
+          "TEMP - Recvd invalid TEMP msgId (0x%08X)", CFE_SB_MsgIdToValue(TempMsgId));
+          break;
+        }
+      }else if(CFE_SB_status == CFE_SB_NO_MESSAGE){
+        // The pipe is empty
+        break;
+      }else if(CFE_SB_status == CFE_SB_TIME_OUT){
+        CFE_EVS_SendEvent(TEMP_APP_PIPE_ERR_EID, CFE_EVS_EventType_INFORMATION,
+          "TEMP: Message fails to arrive within the specified timeout period\n");
+          break;
+        }
+        // OS_TaskDelay(500); /*2 Hz*/
+      }while(CFE_SB_status == CFE_SUCCESS);
+    }
