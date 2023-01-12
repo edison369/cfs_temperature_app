@@ -82,6 +82,8 @@ void TEMP_APP_Main(void)
         */
         CFE_ES_PerfLogExit(TEMP_APP_PERF_ID);
 
+        get_sensors_temp();
+
         /* Pend on receipt of command packet */
         status = CFE_SB_ReceiveBuffer(&SBBufPtr, TEMP_APP_Data.CommandPipe, CFE_SB_PEND_FOREVER);
 
@@ -190,6 +192,21 @@ int32 TEMP_APP_Init(void)
     }
 
     /*
+    ** Software Bus temperature pipe.
+    */
+    char   TempPipeName[16];
+    uint16 TempPipeDepth;
+
+    TempPipeDepth = TEMP_SENS_PIPE_DEPTH;
+    strcpy(TempPipeName, "TEMP_SENS_PIPE");
+
+    status = CFE_SB_CreatePipe(&TEMP_APP_Data.TempPipe, TempPipeDepth, TempPipeName);
+    if (status != CFE_SUCCESS){
+        CFE_EVS_SendEvent(TEMP_APP_PIPE_ERR_EID, CFE_EVS_EventType_ERROR, "TEMP Can't create TEMP_SENS pipe status %i\n",(int)status);
+        return status;
+    }
+
+    /*
     ** Subscribe to Housekeeping request commands
     */
     status = CFE_SB_Subscribe(CFE_SB_ValueToMsgId(TEMP_APP_SEND_HK_MID), TEMP_APP_Data.CommandPipe);
@@ -219,6 +236,21 @@ int32 TEMP_APP_Init(void)
         CFE_ES_WriteToSysLog("Temperature App: Error Subscribing to Command, RC = 0x%08lX\n", (unsigned long)status);
 
         return status;
+    }
+
+    /*
+    ** Subscribe to Altitude App Temperature packets
+    */
+    // status = CFE_SB_Subscribe(CFE_SB_ValueToMsgId(ALTITUDE_APP_TEMP_MID), RF_TLM_Data.TlmPipe);
+    status = CFE_SB_SubscribeEx(CFE_SB_ValueToMsgId(ALTITUDE_APP_TEMP_MID),  /* Msg Id to Receive */
+                                TEMP_APP_Data.TempPipe,                            /* Pipe Msg is to be Rcvd on */
+                                CFE_SB_DEFAULT_QOS,                             /* Quality of Service */
+                                10);                                            /* Max Number to Queue */
+    if (status != CFE_SUCCESS){
+       CFE_EVS_SendEvent(TEMP_APP_SUBSCRIBE_ERR_EID, CFE_EVS_EventType_ERROR,
+         "Temperature App: Error Subscribing to Altitude App, RC = 0x%08lX\n",
+         (unsigned long)status);
+       return status;
     }
 
 
@@ -495,13 +527,53 @@ int32 aht10_init(void){
 
 }
 
+void get_sensors_temp(void){
+    int32            CFE_SB_status = CFE_SUCCESS;
+    CFE_SB_Buffer_t* TempMsgPtr = NULL;
+    CFE_SB_MsgId_t   TempMsgId;
+
+
+    SUBS_APP_TempData_t* dataPtr = NULL;
+
+    do{
+        CFE_SB_status = CFE_SB_ReceiveBuffer(&TempMsgPtr, TEMP_APP_Data.TempPipe, CFE_SB_POLL);
+        dataPtr = NULL;
+
+        if (CFE_SB_status == CFE_SUCCESS){
+            CFE_MSG_GetMsgId(&TempMsgPtr->Msg, &TempMsgId);
+
+            /* Update the private data */
+            dataPtr = (SUBS_APP_TempData_t *)TempMsgPtr;
+            TEMP_APP_Data.sensor_temp = dataPtr->temperature;
+
+            switch (CFE_SB_MsgIdToValue(TempMsgId)){
+
+              case ALTITUDE_APP_TEMP_MID:
+                TEMP_APP_Data.MPL3115A2Temp = TEMP_APP_Data.sensor_temp;
+                break;
+
+              default:
+                CFE_EVS_SendEvent(TEMP_APP_INVALID_MSGID_ERR_EID, CFE_EVS_EventType_ERROR,
+                                  "TEMP - Recvd invalid TEMP msgId (0x%08X)", CFE_SB_MsgIdToValue(TempMsgId));
+                break;
+            }
+        }else if(CFE_SB_status == CFE_SB_NO_MESSAGE){
+          // The pipe is empty
+          break;
+        }else if(CFE_SB_status == CFE_SB_TIME_OUT){
+          CFE_EVS_SendEvent(TEMP_APP_PIPE_ERR_EID, CFE_EVS_EventType_INFORMATION,
+                            "TEMP: Message fails to arrive within the specified timeout period\n");
+          break;
+        }
+        // OS_TaskDelay(500); /*2 Hz*/
+    }while(CFE_SB_status == CFE_SUCCESS);
+}
+
 void temperature_read(void){
 
-  // Data reading every 120 segs approx
+  // Data reading every 32 segs approx
   // Each read is every 4 segs approx
   if(TEMP_APP_Data.TimeCounter == 0){
-    CFE_EVS_SendEvent(TEMP_APP_DEV_INF_EID, CFE_EVS_EventType_INFORMATION, "TEMP: Reading temperature from all sensors");
-
     // Alternatively the function sensor_aht10_get_temp() can be used
     // instead of aht10_get_data(). sensor_aht10_get_temp() is a function from
     // the sensor public API, and it only returns the temperature value.
@@ -509,17 +581,11 @@ void temperature_read(void){
     // sensor.
     // Both functions CAN NOT be used at the same time, this will heat the sensor.
     if(aht10_get_data() != 0){
-      CFE_EVS_SendEvent(TEMP_APP_DEV_INF_EID, CFE_EVS_EventType_INFORMATION, "TEMP: Error when reading temperature");
+      CFE_EVS_SendEvent(TEMP_APP_DEV_INF_EID, CFE_EVS_EventType_INFORMATION, "TEMP: Error reading AHT10 temperature");
     }
-
-    // TEMP_APP_Data.MPU6050Temp = sensor_mpu6050_get_temp();
-    // TEMP_APP_Data.MPL3115A2Temp = sensor_mpl3115a2_getTemperature();
-
-    TEMP_APP_Data.MPU6050Temp = 0;
-    TEMP_APP_Data.MPL3115A2Temp = 0;
   }
 
-  if(TEMP_APP_Data.TimeCounter <= 29){
+  if(TEMP_APP_Data.TimeCounter <= 8){
     TEMP_APP_Data.TimeCounter++;
   }else{
     TEMP_APP_Data.TimeCounter = 0;

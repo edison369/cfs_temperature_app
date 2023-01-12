@@ -38,12 +38,19 @@
 #include "temp_app_msgids.h"
 #include "temp_app_msg.h"
 
+#include "altitude_app_msgids.h"
+#include "altitude_app_msg.h"
+
 /***********************************************************************/
 #define TEMP_APP_PIPE_DEPTH 32 /* Depth of the Command Pipe for Application */
 
 #define PIN_HIGH		1
 #define PIN_LOW			0
 
+/**
+ * Depth of pipe for temperature from other sensors
+ */
+#define TEMP_SENS_PIPE_DEPTH OS_QUEUE_MAX_DEPTH
 /************************************************************************
 ** Type Definitions
 *************************************************************************/
@@ -74,6 +81,7 @@ typedef struct
     */
     float MPU6050Temp;
     float MPL3115A2Temp;
+    float sensor_temp;
 
     /*
     ** Housekeeping telemetry packet...
@@ -90,6 +98,7 @@ typedef struct
     ** Operational data (not reported in housekeeping)...
     */
     CFE_SB_PipeId_t CommandPipe;
+    CFE_SB_PipeId_t TempPipe;
 
     /*
     ** Initialization data (not reported in housekeeping)...
@@ -118,6 +127,8 @@ int32 TEMP_APP_ResetCounters(const TEMP_APP_ResetCountersCmd_t *Msg);
 int32 TEMP_APP_Noop(const TEMP_APP_NoopCmd_t *Msg);
 
 bool TEMP_APP_VerifyCmdLength(CFE_MSG_Message_t *MsgPtr, size_t ExpectedLength);
+
+void get_sensors_temp(void);
 
 int32 aht10_init(void);
 void temperature_read(void);

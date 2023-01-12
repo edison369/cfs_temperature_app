@@ -71,6 +71,12 @@ typedef struct
 typedef struct
 {
     CFE_MSG_TelemetryHeader_t  TelemetryHeader; /**< \brief Telemetry header */
+    float temperature;
+} SUBS_APP_TempData_t;
+
+typedef struct
+{
+    CFE_MSG_TelemetryHeader_t  TelemetryHeader; /**< \brief Telemetry header */
     uint8_t AppID_H;
     uint8_t AppID_L;
     uint8 CommandCounter;

@@ -34,7 +34,7 @@
 #define TEMP_APP_LEN_ERR_EID           6
 #define TEMP_APP_PIPE_ERR_EID          7
 #define TEMP_APP_DEV_INF_EID           8
-
+#define TEMP_APP_SUBSCRIBE_ERR_EID     9
 //TODO: Here you add the new commands events IDs
 
 #define TEMP_APP_EVENT_COUNTS          8
