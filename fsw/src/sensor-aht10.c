@@ -3,7 +3,7 @@
  *
  * @brief Temperature and Humidity Sensor AHT10 Driver Implementation
  *
- * @ingroup I2CSensorAHT10
+ *
  */
 
 #include "sensor-aht10.h"
@@ -12,7 +12,9 @@ SENSOR_AHT10_Data_t SENSOR_AHT10_Data;
 
 static const char bus_path[] = "/dev/i2c-1";
 
-// Prototypes
+/*
+ * Prototypes for the Private Functions
+ */
 static int sensor_aht10_ioctl(i2c_dev *dev, ioctl_command_t command, void *arg);
 
 static int read_bytes(int fd, uint16_t i2c_address, uint8_t data_address, uint16_t nr_bytes, uint8_t **buff);
@@ -27,7 +29,9 @@ static int readStatusRegister(uint8_t **buff);
 static uint8_t get_calibration_bit(void);
 static void get_busy_bit(void);
 
-// Functions
+/*
+ * Private Functions
+ */
 static int read_bytes(int fd, uint16_t i2c_address, uint8_t data_address, uint16_t nr_bytes, uint8_t **buff){
   int rv;
   uint8_t value[nr_bytes];
@@ -196,7 +200,7 @@ static int sensor_aht10_ioctl(i2c_dev *dev, ioctl_command_t command, void *arg){
 }
 
 static void updateHumidity(void){
-  uint32_t  humidity   = SENSOR_AHT10_Data.rawData[0];                          //20-bit raw humidity data
+  uint32_t  humidity   = SENSOR_AHT10_Data.rawData[0];  //20-bit raw humidity data
             humidity <<= 8;
             humidity  |= SENSOR_AHT10_Data.rawData[1];
             humidity <<= 4;
@@ -208,7 +212,7 @@ static void updateHumidity(void){
 }
 
 static void updateTemperature(void){
-  uint32_t temperature   = SENSOR_AHT10_Data.rawData[2] & 0x0F;                //20-bit raw temperature data
+  uint32_t temperature   = SENSOR_AHT10_Data.rawData[2] & 0x0F; //20-bit raw temperature data
            temperature <<= 8;
            temperature  |= SENSOR_AHT10_Data.rawData[3];
            temperature <<= 8;
@@ -317,6 +321,9 @@ static void get_busy_bit(void){
   }
 }
 
+/*
+ * Public Functions
+ */
 int i2c_dev_register_sensor_aht10(const char *bus_path, const char *dev_path){
   i2c_dev *dev;
 
@@ -340,7 +347,7 @@ int sensor_aht10_begin(int fd){
     SENSOR_AHT10_Data.rawData[i] = 0;
   }
 
-  OS_TaskDelay(100);                  //wait for sensor to initialize
+  OS_TaskDelay(100); //wait for sensor to initialize
 
   // Do a soft reset before setting Normal Mode
   ioctl(fd, SENSOR_AHT10_SOFT_RST, NULL);

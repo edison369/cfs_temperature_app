@@ -339,8 +339,6 @@ void TEMP_APP_ProcessGroundCommand(CFE_SB_Buffer_t *SBBufPtr)
 
             break;
 
-	// TODO: Add the commands for the temperature control...
-
         /* default case already found during FC vs length test */
         default:
             CFE_EVS_SendEvent(TEMP_APP_COMMAND_ERR_EID, CFE_EVS_EventType_ERROR,
@@ -358,9 +356,11 @@ int32 TEMP_APP_ReportRFTelemetry(const CFE_MSG_CommandHeader_t *Msg)
     TEMP_APP_Data.OutData.CommandErrorCounter = TEMP_APP_Data.ErrCounter;
     TEMP_APP_Data.OutData.CommandCounter      = TEMP_APP_Data.CmdCounter;
 
+    /* Copy the app ID */
     TEMP_APP_Data.OutData.AppID_H = (uint8_t) ((TEMP_APP_HK_TLM_MID >> 8) & 0xff);
     TEMP_APP_Data.OutData.AppID_L = (uint8_t) (TEMP_APP_HK_TLM_MID & 0xff);
 
+    /* Copy the AHT10 data */
     uint8_t *aux_array1;
     aux_array1 = NULL;
     aux_array1 = malloc(4 * sizeof(uint8_t));
@@ -371,6 +371,7 @@ int32 TEMP_APP_ReportRFTelemetry(const CFE_MSG_CommandHeader_t *Msg)
     aux_array2 = malloc(4 * sizeof(uint8_t));
     aux_array2 = (uint8_t*)(&TEMP_APP_Data.HumidityRead);
 
+    /* Copy the other sensors data */
     uint8_t *aux_array3;
     aux_array3 = NULL;
     aux_array3 = malloc(4 * sizeof(uint8_t));
@@ -545,15 +546,15 @@ int32 aht10_init(void){
 
 void temperature_read(void){
 
-  // Data reading every 32 segs approx
-  // Each read is every 4 segs approx
+  // Data reading every 32 segs approx, each read is every 4 segs approx
   if(TEMP_APP_Data.TimeCounter == 7){
-    // Alternatively the function sensor_aht10_get_temp() can be used
-    // instead of aht10_get_data(). sensor_aht10_get_temp() is a function from
-    // the sensor public API, and it only returns the temperature value.
-    // aht10_get_data() gets both temperature and humidity values from the
-    // sensor.
-    // Both functions CAN NOT be used at the same time, this will heat the sensor.
+    /* Alternatively the function sensor_aht10_get_temp() can be used
+    ** instead of aht10_get_data(). sensor_aht10_get_temp() is a function from
+    ** the sensor public API, and it only returns the temperature value.
+    ** aht10_get_data() gets both temperature and humidity values from the
+    ** sensor.
+    ** Both functions CAN NOT be used at the same time, this will heat the sensor.
+    */
     if(aht10_get_data() != 0){
       CFE_EVS_SendEvent(TEMP_APP_DEV_INF_EID, CFE_EVS_EventType_INFORMATION, "TEMP: Error reading AHT10 temperature");
     }
@@ -586,6 +587,7 @@ int aht10_get_data(void){
 
   return 0;
 }
+
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * **/
 /*                                                                            */
 /* Function to get the temperature sent by other apps to the TempPipe         */
@@ -610,6 +612,7 @@ void get_sensors_temp(void){
       dataPtr = (SUBS_APP_TempData_t *)TempMsgPtr;
       TEMP_APP_Data.sensor_temp = dataPtr->temperature;
 
+      /* Determine which sensor sent the data */
       switch (CFE_SB_MsgIdToValue(TempMsgId)){
 
         case ALTITUDE_APP_TEMP_MID:
@@ -633,6 +636,5 @@ void get_sensors_temp(void){
           "TEMP: Message fails to arrive within the specified timeout period\n");
           break;
         }
-        // OS_TaskDelay(500); /*2 Hz*/
       }while(CFE_SB_status == CFE_SUCCESS);
     }

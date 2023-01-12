@@ -3,7 +3,7 @@
  *
  * @brief Temperature and Humidity Sensor AHT10 Driver API
  *
- * @ingroup I2CSensorAHT10
+ *
  */
 
 
@@ -21,13 +21,6 @@
 #include <string.h>
 #include <unistd.h>
 #include <cfe.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif /* __cplusplus */
-
-#define TEMP_READ
-#define HUMID_READ
 
 /* list of I2C addresses */
 #define AHT10_ADDRESS_X38                 0x38  //AHT10 I2C address if address pin to GND
@@ -110,16 +103,6 @@ extern "C" {
 */
 /**************************************************************************/
 
-/**
- * @defgroup I2CSensorAHT10 Temperature and Humidity Sensor AHT10 Driver
- *
- * @ingroup I2CDevice
- *
- * @brief Driver for AHT10 Temperature and Humidity sensor.
- *
- * @{
- */
-
 typedef enum {
   SENSOR_AHT10_SOFT_RST,
   SENSOR_AHT10_NORMAL_MODE,
@@ -141,12 +124,5 @@ int sensor_aht10_read(int fd);
 // I2C functions
 float sensor_aht10_get_temp(void);
 float sensor_aht10_get_humid(void);
-
-
-/** @} */
-
-#ifdef __cplusplus
-}
-#endif /* __cplusplus */
 
 #endif /* _DEV_I2C_SENSOR_AHT10_H */

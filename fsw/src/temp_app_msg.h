@@ -65,7 +65,7 @@ typedef struct
     float HumidityRead;
     float MPU6050Temp;
     float MPL3115A2Temp;
-    uint8 TimeCounter;
+    int TimeCounter;
 } TEMP_APP_HkTlm_Payload_t;
 
 typedef struct
