@@ -346,9 +346,6 @@ int32 TEMP_APP_ReportRFTelemetry(const CFE_MSG_CommandHeader_t *Msg){
 
       TEMP_APP_Data.OutData.byte_group_5[i] = 0;
       TEMP_APP_Data.OutData.byte_group_6[i] = 0;
-      TEMP_APP_Data.OutData.byte_group_7[i] = 0;
-      TEMP_APP_Data.OutData.byte_group_8[i] = 0;
-      TEMP_APP_Data.OutData.byte_group_9[i] = 0;
 
   }
 
@@ -515,10 +512,15 @@ void temperature_read(void){
     // aht10_get_data() gets both temperature and humidity values from the
     // sensor.
     // Both functions CAN NOT be used at the same time, this will heat the sensor.
-    aht10_get_data();
+    if(aht10_get_data() != 0){
+      CFE_EVS_SendEvent(TEMP_APP_DEV_INF_EID, CFE_EVS_EventType_INFORMATION, "TEMP: Error when reading temperature");
+    }
 
-    TEMP_APP_Data.MPU6050Temp = sensor_mpu6050_get_temp();
-    TEMP_APP_Data.MPL3115A2Temp = sensor_mpl3115a2_getTemperature();
+    // TEMP_APP_Data.MPU6050Temp = sensor_mpu6050_get_temp();
+    // TEMP_APP_Data.MPL3115A2Temp = sensor_mpl3115a2_getTemperature();
+
+    TEMP_APP_Data.MPU6050Temp = 0;
+    TEMP_APP_Data.MPL3115A2Temp = 0;
   }
 
   if(TEMP_APP_Data.TimeCounter <= 29){
