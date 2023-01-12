@@ -41,6 +41,9 @@
 #include "altitude_app_msgids.h"
 #include "altitude_app_msg.h"
 
+#include "imu_app_msgids.h"
+#include "imu_app_msg.h"
+
 /***********************************************************************/
 #define TEMP_APP_PIPE_DEPTH 32 /* Depth of the Command Pipe for Application */
 

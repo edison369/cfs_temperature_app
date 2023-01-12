@@ -253,6 +253,21 @@ int32 TEMP_APP_Init(void)
        return status;
     }
 
+    /*
+    ** Subscribe to IMU App Temperature packets
+    */
+    // status = CFE_SB_Subscribe(CFE_SB_ValueToMsgId(IMU_APP_TEMP_MID), RF_TLM_Data.TlmPipe);
+    status = CFE_SB_SubscribeEx(CFE_SB_ValueToMsgId(IMU_APP_TEMP_MID),  /* Msg Id to Receive */
+                                TEMP_APP_Data.TempPipe,                            /* Pipe Msg is to be Rcvd on */
+                                CFE_SB_DEFAULT_QOS,                             /* Quality of Service */
+                                10);                                            /* Max Number to Queue */
+    if (status != CFE_SUCCESS){
+       CFE_EVS_SendEvent(TEMP_APP_SUBSCRIBE_ERR_EID, CFE_EVS_EventType_ERROR,
+         "Temperature App: Error Subscribing to IMU App, RC = 0x%08lX\n",
+         (unsigned long)status);
+       return status;
+    }
+
 
     CFE_EVS_SendEvent(TEMP_APP_STARTUP_INF_EID, CFE_EVS_EventType_INFORMATION, "TEMP App Initialized.%s",
                       TEMP_APP_VERSION_STRING);
@@ -550,6 +565,10 @@ void get_sensors_temp(void){
 
               case ALTITUDE_APP_TEMP_MID:
                 TEMP_APP_Data.MPL3115A2Temp = TEMP_APP_Data.sensor_temp;
+                break;
+
+              case IMU_APP_TEMP_MID:
+                TEMP_APP_Data.MPU6050Temp = TEMP_APP_Data.sensor_temp;
                 break;
 
               default:

@@ -11,6 +11,9 @@ add_cfe_app(temp_app fsw/src/temp_app.c)
 include_directories(${altitude_app_MISSION_DIR}/fsw/platform_inc)
 include_directories(${altitude_app_MISSION_DIR}/fsw/src)
 
+include_directories(${imu_app_MISSION_DIR}/fsw/platform_inc)
+include_directories(${imu_app_MISSION_DIR}/fsw/src)
+
 # Include the public API from aht10, mpl3115a2 and mpu6050
 # to call library-provided functions
 add_cfe_app_dependency(temp_app aht10)
