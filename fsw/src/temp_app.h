@@ -124,6 +124,7 @@ void  TEMP_APP_Main(void);
 int32 TEMP_APP_Init(void);
 void  TEMP_APP_ProcessCommandPacket(CFE_SB_Buffer_t *SBBufPtr);
 void  TEMP_APP_ProcessGroundCommand(CFE_SB_Buffer_t *SBBufPtr);
+int32 TEMP_APP_ReadSensor(const CFE_MSG_CommandHeader_t *Msg);
 int32 TEMP_APP_ReportRFTelemetry(const CFE_MSG_CommandHeader_t *Msg);
 int32 TEMP_APP_ReportHousekeeping(const CFE_MSG_CommandHeader_t *Msg);
 int32 TEMP_APP_ResetCounters(const TEMP_APP_ResetCountersCmd_t *Msg);
@@ -131,11 +132,9 @@ int32 TEMP_APP_Noop(const TEMP_APP_NoopCmd_t *Msg);
 
 bool TEMP_APP_VerifyCmdLength(CFE_MSG_Message_t *MsgPtr, size_t ExpectedLength);
 
-void get_sensors_temp(void);
-
 int32 aht10_init(void);
-void temperature_read(void);
 int aht10_get_data(void);
 
+void get_sensors_temp(void);
 
 #endif /* TEMP_APP_H */

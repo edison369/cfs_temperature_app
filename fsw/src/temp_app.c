@@ -57,18 +57,20 @@ void TEMP_APP_Main(void)
     ** CFE_ES_RunStatus_APP_ERROR and the App will not enter the RunLoop
     */
     status = TEMP_APP_Init();
-    if (status != CFE_SUCCESS)
-    {
-        TEMP_APP_Data.RunStatus = CFE_ES_RunStatus_APP_ERROR;
-    }
+    if (status == CFE_SUCCESS){
 
-    status = aht10_init();
-    if (status != CFE_SUCCESS)
-    {
+      status = aht10_init();
+      if (status != CFE_SUCCESS)
+      {
         TEMP_APP_Data.RunStatus = CFE_ES_RunStatus_APP_ERROR;
         CFE_EVS_SendEvent(TEMP_APP_DEV_INF_EID, CFE_EVS_EventType_ERROR,
-                          "TEMP APP: Error initializing AHT10\n");
+          "TEMP APP: Error initializing AHT10\n");
+        }
+
+    }else{
+      TEMP_APP_Data.RunStatus = CFE_ES_RunStatus_APP_ERROR;
     }
+
 
     /*
     ** TEMP Runloop
@@ -190,21 +192,6 @@ int32 TEMP_APP_Init(void)
     }
 
     /*
-    ** Software Bus temperature pipe.
-    */
-    char   TempPipeName[16];
-    uint16 TempPipeDepth;
-
-    TempPipeDepth = TEMP_SENS_PIPE_DEPTH;
-    strcpy(TempPipeName, "TEMP_SENS_PIPE");
-
-    status = CFE_SB_CreatePipe(&TEMP_APP_Data.TempPipe, TempPipeDepth, TempPipeName);
-    if (status != CFE_SUCCESS){
-        CFE_EVS_SendEvent(TEMP_APP_PIPE_ERR_EID, CFE_EVS_EventType_ERROR, "TEMP Can't create TEMP_SENS pipe status %i\n",(int)status);
-        return status;
-    }
-
-    /*
     ** Subscribe to Housekeeping request commands
     */
     status = CFE_SB_Subscribe(CFE_SB_ValueToMsgId(TEMP_APP_SEND_HK_MID), TEMP_APP_Data.CommandPipe);
@@ -226,6 +213,17 @@ int32 TEMP_APP_Init(void)
     }
 
     /*
+    ** Subscribe to Read command packets
+    */
+    status = CFE_SB_Subscribe(CFE_SB_ValueToMsgId(TEMP_APP_READ_MID), TEMP_APP_Data.CommandPipe);
+    if (status != CFE_SUCCESS)
+    {
+        CFE_ES_WriteToSysLog("Temperature App: Error Subscribing to Command, RC = 0x%08lX\n", (unsigned long)status);
+
+        return status;
+    }
+
+    /*
     ** Subscribe to ground command packets
     */
     status = CFE_SB_Subscribe(CFE_SB_ValueToMsgId(TEMP_APP_CMD_MID), TEMP_APP_Data.CommandPipe);
@@ -233,6 +231,21 @@ int32 TEMP_APP_Init(void)
     {
         CFE_ES_WriteToSysLog("Temperature App: Error Subscribing to Command, RC = 0x%08lX\n", (unsigned long)status);
 
+        return status;
+    }
+
+    /*
+    ** Software Bus temperature pipe.
+    */
+    char   TempPipeName[16];
+    uint16 TempPipeDepth;
+
+    TempPipeDepth = TEMP_SENS_PIPE_DEPTH;
+    strcpy(TempPipeName, "TEMP_SENS_PIPE");
+
+    status = CFE_SB_CreatePipe(&TEMP_APP_Data.TempPipe, TempPipeDepth, TempPipeName);
+    if (status != CFE_SUCCESS){
+        CFE_EVS_SendEvent(TEMP_APP_PIPE_ERR_EID, CFE_EVS_EventType_ERROR, "TEMP Can't create TEMP_SENS pipe status %i\n",(int)status);
         return status;
     }
 
@@ -300,6 +313,10 @@ void TEMP_APP_ProcessCommandPacket(CFE_SB_Buffer_t *SBBufPtr)
             TEMP_APP_ReportRFTelemetry((CFE_MSG_CommandHeader_t *)SBBufPtr);
             break;
 
+        case TEMP_APP_READ_MID:
+            TEMP_APP_ReadSensor((CFE_MSG_CommandHeader_t *)SBBufPtr);
+            break;
+
         default:
             CFE_EVS_SendEvent(TEMP_APP_INVALID_MSGID_ERR_EID, CFE_EVS_EventType_ERROR,
                               "TEMP: invalid command packet,MID = 0x%x", (unsigned int)CFE_SB_MsgIdToValue(MsgId));
@@ -345,6 +362,30 @@ void TEMP_APP_ProcessGroundCommand(CFE_SB_Buffer_t *SBBufPtr)
                               "Invalid ground command code: CC = %d", CommandCode);
             break;
     }
+}
+
+int32 TEMP_APP_ReadSensor(const CFE_MSG_CommandHeader_t *Msg){
+  // Data reading every 32 segs approx, each read is every 4 segs approx
+  if(TEMP_APP_Data.TimeCounter == 7){
+    /* Alternatively the function sensor_aht10_get_temp() can be used
+    ** instead of aht10_get_data(). sensor_aht10_get_temp() is a function from
+    ** the sensor public API, and it only returns the temperature value.
+    ** aht10_get_data() gets both temperature and humidity values from the
+    ** sensor.
+    ** Both functions CAN NOT be used at the same time, this will heat the sensor.
+    */
+    if(aht10_get_data() != 0){
+      CFE_EVS_SendEvent(TEMP_APP_DEV_INF_EID, CFE_EVS_EventType_INFORMATION, "TEMP: Error reading AHT10 temperature");
+    }
+  }
+
+  if(TEMP_APP_Data.TimeCounter < 7){
+    TEMP_APP_Data.TimeCounter++;
+  }else{
+    TEMP_APP_Data.TimeCounter = 0;
+  }
+
+  return CFE_SUCCESS;
 }
 
 int32 TEMP_APP_ReportRFTelemetry(const CFE_MSG_CommandHeader_t *Msg)
@@ -418,7 +459,6 @@ int32 TEMP_APP_ReportHousekeeping(const CFE_MSG_CommandHeader_t *Msg)
     TEMP_APP_Data.HkTlm.Payload.CommandCounter      = TEMP_APP_Data.CmdCounter;
 
     /* Copy the AHT10 data */
-    temperature_read();
     TEMP_APP_Data.HkTlm.Payload.TemperatureRead = TEMP_APP_Data.TemperatureRead;
     TEMP_APP_Data.HkTlm.Payload.HumidityRead = TEMP_APP_Data.HumidityRead;
 
@@ -541,30 +581,6 @@ int32 aht10_init(void){
   close(fd);
 
   return CFE_SUCCESS;
-
-}
-
-void temperature_read(void){
-
-  // Data reading every 32 segs approx, each read is every 4 segs approx
-  if(TEMP_APP_Data.TimeCounter == 7){
-    /* Alternatively the function sensor_aht10_get_temp() can be used
-    ** instead of aht10_get_data(). sensor_aht10_get_temp() is a function from
-    ** the sensor public API, and it only returns the temperature value.
-    ** aht10_get_data() gets both temperature and humidity values from the
-    ** sensor.
-    ** Both functions CAN NOT be used at the same time, this will heat the sensor.
-    */
-    if(aht10_get_data() != 0){
-      CFE_EVS_SendEvent(TEMP_APP_DEV_INF_EID, CFE_EVS_EventType_INFORMATION, "TEMP: Error reading AHT10 temperature");
-    }
-  }
-
-  if(TEMP_APP_Data.TimeCounter < 7){
-    TEMP_APP_Data.TimeCounter++;
-  }else{
-    TEMP_APP_Data.TimeCounter = 0;
-  }
 
 }
 
